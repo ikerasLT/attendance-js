@@ -3,7 +3,7 @@
  * (c) 2017 Viktoras Morkūnas
  *
  * ---------------------------
- * Initiliaze by $(calendar).attendance(config);
+ * Initialize by $(calendar).attendance(config);
  *
  * Dependencies: jQuery, moment
  *
@@ -15,6 +15,7 @@
  *
  * use .attendance-next[data-calendar="calendar.id"] for next binding
  * use .attendance-prev[data-calendar="calendar.id"] for prev binding
+ * use .attendance-filter[data-calendar="calendar.id"] for resource filter binding
  */
 
 $.fn.attendance = function(config) {
@@ -25,6 +26,7 @@ $.fn.attendance = function(config) {
     var end = start.clone().endOf('month');
     var data = config.data;
     var url = config.url;
+    var filter = '';
 
     function render() {
         calendar.html(renderTable());
@@ -71,11 +73,13 @@ $.fn.attendance = function(config) {
         rows = '';
 
         for (i in resources) {
-            rows += '' +
-                '<tr>' +
-                '<td>' + resources[i] + '</td>' +
-                renderCells(i) +
-                '</tr>';
+            if ((resources[i]).toLowerCase().search(filter.toLowerCase()) !== -1) {
+                rows += '' +
+                    '<tr>' +
+                    '<td>' + resources[i] + '</td>' +
+                    renderCells(i) +
+                    '</tr>';
+            }
         }
 
         return rows;
@@ -142,10 +146,16 @@ $.fn.attendance = function(config) {
         calendar.find('#attendance-loader').html('');
     }
 
+    function filterResources() {
+        filter = $(this).val();
+        render();
+    }
+
     render();
 
     $('.attendance-next[data-calendar="' + calendar.attr('id') + '"]').click(nextMonth);
     $('.attendance-prev[data-calendar="' + calendar.attr('id') + '"]').click(prevMonth);
+    $('.attendance-filter[data-calendar="' + calendar.attr('id') + '"]').keyup(filterResources);
 
     return {
         next: nextMonth,
