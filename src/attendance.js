@@ -26,7 +26,9 @@ $.fn.attendance = function(config) {
     var end = start.clone().endOf('month');
     var data = config.data;
     var url = config.url;
-    var filter = '';
+    var label = config.label;
+    var filter = {};
+    var filteredResources = Object.values(resources);
 
     function render() {
         calendar.html(renderTable());
@@ -73,10 +75,10 @@ $.fn.attendance = function(config) {
         rows = '';
 
         for (i in resources) {
-            if ((resources[i]).toLowerCase().search(filter.toLowerCase()) !== -1) {
+            if ($.inArray(resources[i], filteredResources) !== -1) {
                 rows += '' +
                     '<tr>' +
-                    '<td>' + resources[i] + '</td>' +
+                    '<td>' + resources[i][label] + '</td>' +
                     renderCells(i) +
                     '</tr>';
             }
@@ -146,8 +148,48 @@ $.fn.attendance = function(config) {
         calendar.find('#attendance-loader').html('');
     }
 
+    function search(needle, haystack) {
+        if (typeof haystack === 'string') {
+            if (haystack.toLowerCase().search(needle.toLowerCase()) !== -1) {
+                return true;
+            }
+        } else if (haystack instanceof Array) {
+            for (i in haystack) {
+                if (search(needle, haystack[i])) {
+                    return true;
+                }
+            }
+
+            return false;
+        } else {
+            if (haystack == needle) {
+                return true;
+            }
+        }
+
+        return false
+    }
+
     function filterResources() {
-        filter = $(this).val();
+        filter[$(this).data('filter')] = $(this).val();
+
+        filteredResources = [];
+
+        $.each(resources, function (key, resource) {
+            var show = true;
+
+            for (var property in filter) {
+                if (filter.hasOwnProperty(property) && filter[property]) {
+                    if (! search(filter[property], resource[property])) {
+                        show = false
+                    }
+                }
+            }
+
+            if (show) {
+                filteredResources.push(resource);
+            }
+        });
         render();
     }
 
@@ -156,6 +198,7 @@ $.fn.attendance = function(config) {
     $('.attendance-next[data-calendar="' + calendar.attr('id') + '"]').click(nextMonth);
     $('.attendance-prev[data-calendar="' + calendar.attr('id') + '"]').click(prevMonth);
     $('.attendance-filter[data-calendar="' + calendar.attr('id') + '"]').keyup(filterResources);
+    $('.attendance-filter[data-calendar="' + calendar.attr('id') + '"]').change(filterResources);
 
     return {
         next: nextMonth,
